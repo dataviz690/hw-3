@@ -2,19 +2,93 @@
 title: "hw-3 code"
 output: html_notebook
 ---
-
+First i will load library and clean memory
 ```{r}
 #Load Libraries
+rm(list = ls()) # clean memory
 library(tidyverse)
 library(ggplot2)
 ```
 
+I will now load my data
 ```{r}
 #Load Data
+
+
 file_path <- "C:/Users/lgianetti/OneDrive - City of Cambridge/DACSS Program/690V_data_viz/hw-3/ncesdata_MASS_202425.xlsx"
 
 my_data <- read_excel(path = file_path,
     skip = 11)
-View(my_data)
+
+```
+
+I will do a quick look at the data
+```{r}
+#Look at Data
+str(my_data, width = 70,strict.width='cut')
+```
+Now I will clean the data by correcting the data types and checking for missing values and outliers. I will also convert the appropriate columns to factors and numeric types as needed.
+```{r}
+#Clean Data
+my_data$`Low Grade` <- factor(my_data$`Low Grade`, ordered = TRUE)
+my_data$`High Grade` <- factor(my_data$`High Grade`, ordered = TRUE)
+my_data$`Locale Code` <- factor(my_data$`Locale Code`)
+my_data$`Locale` <- factor(my_data$`Locale`)
+my_data$`Charter` <- factor(my_data$`Charter`)
+my_data$`Type` <- factor(my_data$`Type`)
+my_data$`Status` <- factor(my_data$`Status`)
+my_data$`Students` <- as.numeric(my_data$`Students`)
+my_data$`Teachers` <- as.numeric(my_data$`Teachers`)
+my_data$`Student Teacher Ratio` <- as.numeric(my_data$`Student Teacher Ratio`)
+my_data$`Directly Certified` <- as.numeric(my_data$`Directly Certified`)
+my_data$`County Name` <- factor(my_data$`County Name`)
+
+str(my_data, width = 70,strict.width='cut')
+summary(my_data) # check for missing values and outliers
+
+
+```
+Now I will start to explore the data by creating some visualizations. I will create a bar plot to show the distribution of schools by County.
+
+```{r}
+
+# Total values
+TotalValues=table(my_data$'County Name',
+                 useNA = "ifany") #include all values!
+TotalValues
+
+TotalPercent = prop.table(TotalValues)*100
+```
+```{r}
+# Create a data frame for plotting
+CountyTable=as.data.frame(TotalValues)
+
+names(CountyTable)=c("County","Count")
+
+CountyTable$Percent=as.vector(TotalPercent)
+
+CountyTable
+```
+```{r}
+# Create a bar plot
+base = ggplot(CountyTable,
+              aes(x=County,
+                  y=Percent))
+
+base + geom_bar(stat="identity")
+```
+
+```{r}
+#calculate the average student teacher ratio per county and create a bar plot to show the average student teacher ratio by County.
+# Calculate average student teacher ratio per county
+AvgStudentTeacherRatioCounty = my_data |>
+  group_by(`County Name`) |>
+  summarise(AvgRatio = mean(`Student Teacher Ratio`, na.rm = TRUE))
+AvgStudentTeacherRatioCounty
+
+AvgStudentTeacherRatio = my_data |>
+  summarise(AvgRatio = mean(`Student Teacher Ratio`, na.rm = TRUE))
+AvgStudentTeacherRatio
+
 ```
 
