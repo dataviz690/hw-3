@@ -1,0 +1,20 @@
+---
+title: "hw-3 code"
+output: html_notebook
+---
+
+```{r}
+#Load Libraries
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r}
+#Load Data
+file_path <- "C:/Users/lgianetti/OneDrive - City of Cambridge/DACSS Program/690V_data_viz/hw-3/ncesdata_MASS_202425.xlsx"
+
+my_data <- read_excel(path = file_path,
+    skip = 11)
+View(my_data)
+```
+
