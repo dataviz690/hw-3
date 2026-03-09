@@ -41,7 +41,8 @@ my_data$`Students` <- as.numeric(my_data$`Students`)
 my_data$`Teachers` <- as.numeric(my_data$`Teachers`)
 my_data$`Student Teacher Ratio` <- as.numeric(my_data$`Student Teacher Ratio`)
 my_data$`Directly Certified` <- as.numeric(my_data$`Directly Certified`)
-my_data$`County Name` <- factor(my_data$`County Name`)
+my_data$`County Name` <- factor(my_data$`County Name`) 
+
 
 str(my_data, width = 70,strict.width='cut')
 summary(my_data) # check for missing values and outliers
@@ -72,7 +73,7 @@ CountyTable
 ```{r}
 # Create a bar plot
 base = ggplot(CountyTable,
-              aes(x=County,
+              aes(x=reorder(County, -Percent),
                   y=Percent))
 
 base + geom_bar(stat="identity")
@@ -90,5 +91,24 @@ AvgStudentTeacherRatio = my_data |>
   summarise(AvgRatio = mean(`Student Teacher Ratio`, na.rm = TRUE))
 AvgStudentTeacherRatio
 
-```
+MedianStudentTeacherRatio = my_data |>
+  summarise(MedRatio = median(`Student Teacher Ratio`, na.rm = TRUE))
+MedianStudentTeacherRatio
 
+```
+calculate the aver and median student teacher ratio for each county.  Then plot these. Then add reference line for mean or median. then show how far above or below they are.
+
+```{r}
+#add student teacher ratio averages to the County Table
+
+CountyTable <-mutate(CountyTable, 
+                     AvgSTRatio = AvgStudentTeacherRatioCounty$AvgRatio,
+                     MedSTRatio = MedianStudentTeacherRatio$MedRatio,
+                     AvgSTDiff = AvgRatio - AvgStudentTeacherRatio$AvgRatio,
+                     MedSTDiff = AvgRatio - MedianStudentTeacherRatio$MedRatio
+                     )
+
+
+CountyTable
+
+```
