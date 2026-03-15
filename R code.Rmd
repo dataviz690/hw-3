@@ -226,8 +226,8 @@ lolliplot1 = base_st + geom_segment(aes(y=0,
 
 lolliplot2= lolliplot1 + 
   geom_point(size=2) +
-  geom_text(nudge_x = .3,
-            size=2.5,
+  geom_text(nudge_x = .4,
+            size=2.4,
             show.legend = FALSE) 
             
 #add horizontal line at 0 to show the state average and labels  
@@ -235,7 +235,7 @@ lolliplot2 = lolliplot2 + geom_hline(yintercept = 0,
                         linewidth = .7,
                         alpha = 0.8) +
   scale_color_manual(values = c("Higher" = "red", "Lower" = "black")) +
-  labs(title="Most counties in Massachusetts have a lower student teacher ratio than the statewide average of 11.96.",
+  labs(title="Most counties in Massachusetts have a lower student teacher ratio \nthan the statewide average of 11.96.",
        subtitle="2024-2025 School Year",
        x=NULL,
        y="Difference from State Average Student Teacher Ratio",
@@ -260,10 +260,14 @@ lolliplot3 = lolliplot2 + theme(axis.ticks.y = element_blank(),
 
 lolliplot3 = lolliplot3 + geom_label(aes(label=County),
                                       color ='black ',
-                                      size =3,
+                                      size =1.75,
                                       y=0,
                                       show.legend = FALSE ) +
-             theme(axis.text.x = element_blank())
+             theme(axis.text.x = element_blank(),
+                   plot.title = element_text(face = "bold", size = 10),
+                   plot.subtitle = element_text(size = 8),
+                   plot.caption = element_text(face = "italic", size = 8)
+                   )
 
 lolliplot3
 
@@ -314,7 +318,7 @@ x <- rep(CountyTable$County, CountyTable$TotalStudents)
 paretoplot2 = paretochart(x,x.angle = 45)  
 
 paretoplot2 + 
-    labs(title='Cumulative distribution of students across counties in Massachusetts',
+    labs(title='Cumulative distribution of students across counties \nin Massachusetts',
        subtitle = 'Student Data aggregated and sorted by County',
        caption="Source: National Center for Education Statistics")
 
@@ -346,7 +350,7 @@ numplot = ggplot(CountyTable_plot, aes(x = County)) +
   geom_text(
     aes(y = percent_students, label = label),
     vjust = -0.7,
-    size = 3
+    size = 1.8
   ) +
   geom_line(
     aes(y = cumulative_pct, group = 1),
@@ -366,7 +370,7 @@ numplot = ggplot(CountyTable_plot, aes(x = County)) +
   ) +
   
   labs(
-    title = "Cumulative distribution of students across counties in Massachusetts",
+    title = "Cumulative distribution of students across \ncounties in Massachusetts",
     subtitle = "Students aggregated and sorted by county for 2024-2025 school year",
     x = NULL,
     y=NULL,
@@ -374,8 +378,11 @@ numplot = ggplot(CountyTable_plot, aes(x = County)) +
   ) +
   theme_classic() +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 0.7),
-    plot.title = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 0.7, size = 6),
+    axis.text.y = element_text(size = 6),
+    plot.title = element_text(face = "bold", size = 10),
+    plot.subtitle = element_text(size = 8),
+    plot.caption = element_text(face = "italic", size = 8),
     axis.line.x = element_blank(),
     axis.line.y = element_blank(),
     axis.ticks = element_blank(),
