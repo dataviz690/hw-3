@@ -2,15 +2,22 @@
 title: "hw-3 code"
 output: html_notebook
 ---
+
 First i will load library and clean memory
+
 ```{r}
 #Load Libraries
 rm(list = ls()) # clean memory
 library(tidyverse)
+library(readxl)
 library(ggplot2)
+library(qicharts2)
+library(scales)
+
 ```
 
 I will now load my data
+
 ```{r}
 #Load Data
 
@@ -23,11 +30,14 @@ my_data <- read_excel(path = file_path,
 ```
 
 I will do a quick look at the data
+
 ```{r}
 #Look at Data
 str(my_data, width = 70,strict.width='cut')
 ```
+
 Now I will clean the data by correcting the data types and checking for missing values and outliers. I will also convert the appropriate columns to factors and numeric types as needed.
+
 ```{r}
 #Clean Data
 my_data$`Low Grade` <- factor(my_data$`Low Grade`, ordered = TRUE)
@@ -48,7 +58,9 @@ str(my_data, width = 70,strict.width='cut')
 summary(my_data) # check for missing values and outliers
 
 
+
 ```
+
 Now I will start to explore the data by creating some visualizations. I will create a bar plot to show the distribution of schools by County.
 
 ```{r}
@@ -60,6 +72,7 @@ TotalValues
 
 TotalPercent = prop.table(TotalValues)*100
 ```
+
 ```{r}
 # Create a data frame for plotting
 CountyTable=as.data.frame(TotalValues)
@@ -70,6 +83,7 @@ CountyTable$Percent=as.vector(TotalPercent)
 
 CountyTable
 ```
+
 ```{r}
 # Create a bar plot
 base = ggplot(CountyTable,
@@ -79,36 +93,302 @@ base = ggplot(CountyTable,
 base + geom_bar(stat="identity")
 ```
 
+let's explore student teacher ratio. I need to clean the data first. THere are NA associated with missing values. There are 10 rows with missing student and/or teach data and should be removed from the analysis. There are also two extereme outliers with student teacher ratios \>2500 which is not valid and likely due to data entry issue with the teacher value. i will impute these to the mean value for the county.
+
 ```{r}
-#calculate the average student teacher ratio per county and create a bar plot to show the average student teacher ratio by County.
+
+
+#impute outliers with mean value for the county. Impute any student teacher ratio over 100 with the mean value for the county
+my_data <- my_data %>%
+  group_by(`County Name`) %>%
+  mutate(`Student Teacher Ratio` = ifelse(`Student Teacher Ratio` > 100,
+                                         mean(`Student Teacher Ratio`, na.rm = TRUE),
+                                           `Student Teacher Ratio`))
+
+```
+
+```{r}
+
 # Calculate average student teacher ratio per county
 AvgStudentTeacherRatioCounty = my_data |>
   group_by(`County Name`) |>
   summarise(AvgRatio = mean(`Student Teacher Ratio`, na.rm = TRUE))
 AvgStudentTeacherRatioCounty
 
-AvgStudentTeacherRatio = my_data |>
-  summarise(AvgRatio = mean(`Student Teacher Ratio`, na.rm = TRUE))
-AvgStudentTeacherRatio
-
-MedianStudentTeacherRatio = my_data |>
-  summarise(MedRatio = median(`Student Teacher Ratio`, na.rm = TRUE))
-MedianStudentTeacherRatio
-
+#add  average student teacher ratio by county to the County Table 
+CountyTable = CountyTable |>
+  left_join(AvgStudentTeacherRatioCounty, by = c("County" = "County Name"))
 ```
-calculate the aver and median student teacher ratio for each county.  Then plot these. Then add reference line for mean or median. then show how far above or below they are.
+
+calculate the aver and median student teacher ratio for each county. Then plot these. Then add reference line for mean or median. then show how far above or below they are.
 
 ```{r}
-#add student teacher ratio averages to the County Table
+# Calculate a single average and median student teacher ratio use as a refernce line in the plot
+OverallAvgStudentTeacherRatio = mean(my_data$`Student Teacher Ratio`, na.rm = TRUE)
+OverallMedianStudentTeacherRatio = median(my_data$`Student Teacher Ratio`, na.rm = TRUE)
 
-CountyTable <-mutate(CountyTable, 
-                     AvgSTRatio = AvgStudentTeacherRatioCounty$AvgRatio,
-                     MedSTRatio = MedianStudentTeacherRatio$MedRatio,
-                     AvgSTDiff = AvgRatio - AvgStudentTeacherRatio$AvgRatio,
-                     MedSTDiff = AvgRatio - MedianStudentTeacherRatio$MedRatio
-                     )
+OverallAvgStudentTeacherRatio
+OverallMedianStudentTeacherRatio
 
+#add overall average to County Table
+CountyTable$OverallAvg = OverallAvgStudentTeacherRatio
 
-CountyTable
+#calculate the difference between the average student teacher ratio for each county and the overall average
+CountyTable$DifferenceFromOverallAvg = CountyTable$AvgRatio - CountyTable$OverallAvg
+
+#only keep the first word in the County variable
+CountyTable$County = word(CountyTable$County, 1)
+```
+
+```{r}
+# Create a bar plot of average student teacher ratio by county
+base_st = ggplot(CountyTable,
+              aes(x=reorder(County, AvgRatio),
+                  y=AvgRatio))
+
+base_st = base_st + theme_classic()
+
+plot1 = base_st + 
+  geom_col(fill = "gray")
+
+plot1
+```
+
+```{r}
+titleText='Most counties have a lower student teacher ratio than statewide average'
+sub_titleText='Commonwealth of Massachusetts - 2024-2025 School Year'
+sourceText='Source: National Center for Education Statistics'
+
+plot2 = plot1 + labs(title=titleText,
+                     subtitle=sub_titleText,
+                     x =NULL, 
+                     y = NULL,
+                     caption = sourceText) 
+
+plot2
 
 ```
+
+```{r}
+#adding the average student teacher ratio for the state as a reference line
+
+plot3 = plot2 + geom_hline( yintercept = 11.95753,
+                            linetype = "dotted",
+                            linewidth = .7,
+                            alpha = 0.8,) +
+  scale_y_continuous(breaks=c(0,5,10, 15),
+                                 limits = c(0, 15)
+                          ) +
+  geom_text(aes(label=round(AvgRatio,1)),
+            position = position_stack(vjust = 1.05),
+            size = 3)
+
+plot3
+
+```
+
+```{r}
+
+base_st = ggplot(CountyTable,
+              aes(x=reorder(County, AvgRatio),
+                  y=DifferenceFromOverallAvg))
+
+base_st = base_st + theme_classic()
+#creating a lollipop plot to show the difference between the average student teacher ratio for each county and the overall average
+
+lolliplot1 = base_st + geom_segment(aes(y=0, 
+                                   x= reorder(County, AvgRatio),
+                                   yend= DifferenceFromOverallAvg,
+                                   xend= reorder(County, AvgRatio)),
+                             color="gray", size=0.5) 
+lolliplot1
+```
+
+```{r}
+#adding Postitive/Negative Color
+CountyTable$StateAverage=ifelse(CountyTable$DifferenceFromOverallAvg>0,"Higher","Lower") #lower, so negative/no, is good in this case
+CountyTable
+
+base_st = ggplot(CountyTable,
+              aes(x=reorder(County, AvgRatio),
+                  y=DifferenceFromOverallAvg,
+                  color=StateAverage,
+                  label=round(DifferenceFromOverallAvg,2))
+              )
+
+base_st = base_st + theme_classic()
+
+lolliplot1 = base_st + geom_segment(aes(y=0, 
+                                   x= reorder(County, AvgRatio),
+                                   yend= DifferenceFromOverallAvg,
+                                   xend= reorder(County, AvgRatio)),
+                             color="gray", size=0.5)
+
+lolliplot2= lolliplot1 + 
+  geom_point(size=2) +
+  geom_text(nudge_x = .3,
+            size=2.5,
+            show.legend = FALSE) 
+            
+#add horizontal line at 0 to show the state average and labels  
+lolliplot2 = lolliplot2 + geom_hline(yintercept = 0,
+                        linewidth = .7,
+                        alpha = 0.8) +
+  scale_color_manual(values = c("Higher" = "red", "Lower" = "black")) +
+  labs(title="Most counties in Massachusetts have a lower student teacher ratio than the statewide average of 11.96.",
+       subtitle="2024-2025 School Year",
+       x=NULL,
+       y="Difference from State Average Student Teacher Ratio",
+       caption="Source: National Center for Education Statistics \n10 records removed for lack of data and 2 outliers imputed with county mean") +
+  theme(legend.position = "none")
+
+
+```
+
+```{r}
+#now i will finish the plot getting rid of elements and moving the county label
+
+lolliplot3 = lolliplot2 + theme(axis.ticks.y = element_blank(),
+                                axis.title.y = element_blank(),
+                                axis.line.y = element_blank(),
+                                axis.text.y = element_blank(),
+                                axis.ticks.x = element_blank(),
+                                axis.title.x = element_blank(),
+                                axis.line.x = element_blank()
+                                )
+
+
+lolliplot3 = lolliplot3 + geom_label(aes(label=County),
+                                      color ='black ',
+                                      size =3,
+                                      y=0,
+                                      show.legend = FALSE ) +
+             theme(axis.text.x = element_blank())
+
+lolliplot3
+
+charplot <-lolliplot3
+                          
+```
+
+```{r}
+#add total number of students per county
+TotalStudents = my_data |>
+  group_by(`County Name`) |>
+  summarise(TotalStudents = sum(Students, na.rm = TRUE))
+
+#change county name to only the first word in the TotalStudents table and remove county name variable
+TotalStudents$County = word(TotalStudents$`County Name`, 1)
+TotalStudents = TotalStudents |>
+  select(-`County Name`)
+
+#join total students to the CountyTable by County
+CountyTable = CountyTable |>
+  left_join(TotalStudents, by = c("County" = "County"))
+
+```
+
+# Numerical Variable
+
+```{r}
+#I am going to create a pareto plot showing the total distribution of students across counties
+
+
+Base_pareto = ggplot(CountyTable,
+              aes(x=reorder(County, -TotalStudents),
+                  y=TotalStudents))
+paretoplot = Base_pareto + geom_col()
+
+paretoplot
+
+
+
+```
+```{r}
+
+# prepare the data for 'qicharts2'
+
+x <- rep(CountyTable$County, CountyTable$TotalStudents)
+
+
+paretoplot2 = paretochart(x,x.angle = 45)  
+
+paretoplot2 + 
+    labs(title='Cumulative distribution of students across counties in Massachusetts',
+       subtitle = 'Student Data aggregated and sorted by County',
+       caption="Source: National Center for Education Statistics")
+
+
+
+```
+I cannot really modify the base chart, so i will recreate with ggplot to have more control over the design 
+```{r}
+
+# sort data and calculate cumulative percentage for the pareto plot
+CountyTable_plot <- CountyTable %>%
+  arrange(desc(TotalStudents)) %>%
+  mutate(
+    County = factor(County, levels = County),
+    percent_students = TotalStudents / sum(TotalStudents),
+    cumulative_pct = cumsum(TotalStudents) / sum(TotalStudents),
+    label = comma(TotalStudents)
+  )
+
+```
+
+
+
+```{r}
+# Create Pareto-style chart 
+
+numplot = ggplot(CountyTable_plot, aes(x = County)) +
+  geom_col(aes(y = percent_students), fill = "lightblue") +
+  geom_text(
+    aes(y = percent_students, label = label),
+    vjust = -0.7,
+    size = 3
+  ) +
+  geom_line(
+    aes(y = cumulative_pct, group = 1),
+    color = "gray",
+    linewidth = 1,
+    alpha = 0.4
+  ) +
+  geom_point(
+    aes(y = cumulative_pct),
+    color = "darkgray",
+    size = 2
+  ) +
+  scale_y_continuous(
+    labels = percent,
+    limits = c(0, 1.05),
+    breaks = seq(0, 1, by = 0.2)
+  ) +
+  
+  labs(
+    title = "Cumulative distribution of students across counties in Massachusetts",
+    subtitle = "Students aggregated and sorted by county for 2024-2025 school year",
+    x = NULL,
+    y=NULL,
+    caption = "Source: National Center for Education Statistics"
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 0.7),
+    plot.title = element_text(face = "bold"),
+    axis.line.x = element_blank(),
+    axis.line.y = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid.major.y = element_line(color = "grey90", linewidth = 0.4),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_blank()
+  )
+numplot
+```
+
+```{r}
+saveRDS(charplot, file = "plot1.rds")
+saveRDS(numplot, file = "plot2.rds")
+```
+
+
