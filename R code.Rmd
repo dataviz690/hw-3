@@ -346,7 +346,7 @@ CountyTable_plot <- CountyTable %>%
 # Create Pareto-style chart 
 
 numplot = ggplot(CountyTable_plot, aes(x = County)) +
-  geom_col(aes(y = percent_students), fill = "lightblue") +
+  geom_col(aes(y = percent_students), fill = "tan") +
   geom_text(
     aes(y = percent_students, label = label),
     vjust = -0.7,
